@@ -5,13 +5,32 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+var flash = require('connect-flash');
 var routes = require('./routes/index');
-var users = require('./routes/users');
+var session = require('express-session');
+var MongoStore = require('connect-mongo')(session);
+
+//  db settings
+var settings = require('./settings');
 
 var app = express();
 
-// listen port
-app.set('port',process.env.PORT || 3000);
+app.use(flash());
+
+app.use(session({
+  //secret: settings.cookieSecret,
+  secret: settings.cookieSecret,
+  ttl: 14 * 24 * 60 * 60, // = 14 days. Default
+  key: settings.db,//cookie name
+  resave: true,
+  saveUninitialized: true,
+  cookie: {maxAge: 1000 * 60 * 60 * 24 * 30},//30 days
+  store: new MongoStore({
+  	url: settings.url
+  })
+}));
+
+app.set('port', process.env.PORT || 3000);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -25,8 +44,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', routes);
-app.use('/users', users);
+// app.use('/', routes);
+// app.use('/users', users);
+
+//  add routes functions
+routes(app);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -59,5 +81,5 @@ app.use(function(err, req, res, next) {
   });
 });
 
-
+// old function
 module.exports = app;
