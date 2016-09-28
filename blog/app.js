@@ -11,7 +11,10 @@ var session = require('express-session');
 var MongoStore = require('connect-mongo')(session);
 
 //  db settings
+var mongoose = require('mongoose');
 var settings = require('./settings');
+
+global.db = mongoose.createConnection(settings.url);
 
 var app = express();
 
