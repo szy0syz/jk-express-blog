@@ -14,7 +14,8 @@ var MongoStore = require('connect-mongo')(session);
 var mongoose = require('mongoose');
 var settings = require('./settings');
 
-global.db = mongoose.createConnection(settings.url);
+// NaN
+// global.db = mongoose.createConnection(settings.url);
 
 var app = express();
 
