@@ -9,7 +9,6 @@ mongoose.connect(settings.url)
     
 module.exports = function(app) {
   app.get('/', function (req, res) {
-      console.log(req.session.user);
     res.render('index', { 
         title:   'Express for szy',
         user:    req.session.user,
@@ -22,6 +21,7 @@ module.exports = function(app) {
     res.send('my name is szy.');
   });
   
+  app.get('/post', checkNotLogin);
   app.get('/reg', function (req, res) {
       if(req.session.user) {
           res.redirect('/');
@@ -30,6 +30,7 @@ module.exports = function(app) {
       }
   });
   
+  app.get('/post', checkNotLogin);
   app.post('/reg', function (req, res) {
     var name        = req.body.name,
         password    = req.body.password,
@@ -72,7 +73,7 @@ module.exports = function(app) {
     });
   });
   
-  
+  app.get('/post', checkNotLogin);
   app.get('/login', function (req, res) {
       res.render('login', { 
         title:   'Reg',
@@ -82,6 +83,7 @@ module.exports = function(app) {
     });
   });
   
+  app.get('/post', checkNotLogin);
   app.post('/login', function (req, res) {
       var md5 = crypto.createHash('md5'),
       password = md5.update(req.body.password).digest('hex');
@@ -101,18 +103,44 @@ module.exports = function(app) {
       });
   });
   
+  // check login ?
+  app.get('/post', checkLogin);
   app.get('/post', function (req, res) {
-    res.render('login', { title: ' 发表 ' });
+        res.render('post', { 
+        title:   'Post',
+        user:    req.session.user,
+        success: req.flash('success').toString(),
+        error:   req.flash('error').toString()
+    });
   });
   
+  app.get('/post', checkLogin);
   app.post('/post', function (req, res) {
     
   });
   
+  app.get('/post', checkLogin);
   app.get('/logout', function (req, res) {
       req.session.user = null;
       req.flash('success', '登出成功!');
       res.redirect('/');
   });
+  
+  function checkLogin(req, res, next){
+    if (!req.session.user) {
+    req.flash('error', '未登录!'); 
+    res.redirect('/login');
+    }
+    next();
+  }
+  
+  function checkNotLogin(req, res, next){
+    if (req.session.user) {
+    req.flash('error', '已登录!'); 
+    res.redirect('back');//返回之前的页面
+    }
+    next();
+  }
+  
   
 };
