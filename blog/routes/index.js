@@ -1,6 +1,8 @@
 var crypto = require('crypto'),
     model  = require('../models/user.js'),
-    User   = model.User;
+    modelPost = require('../models/post.js'),
+    User   = model.User,
+    Post   = modelPost.Post;
 
 var settings = require('../settings');
 var mongoose = require('mongoose');
@@ -9,19 +11,28 @@ mongoose.connect(settings.url)
     
 module.exports = function(app) {
   app.get('/', function (req, res) {
-    res.render('index', { 
-        title:   'Express for szy',
-        user:    req.session.user,
-        success: req.flash('success').toString(),
-        error:   req.flash('error').toString()
-    });
+      Post.find(function(err,posts){
+          if(err) {
+              posts = [];
+          } else {
+                res.render('index', { 
+                title:   'Express for szy',
+                user:    req.session.user,
+                success: req.flash('success').toString(),
+                error:   req.flash('error').toString(),
+                posts:   posts
+                });
+            }
+      });
+      
+
   });
   
   app.get('/szy', function (req, res) {
     res.send('my name is szy.');
   });
   
-  app.get('/post', checkNotLogin);
+  app.get('/reg', checkNotLogin);
   app.get('/reg', function (req, res) {
       if(req.session.user) {
           res.redirect('/');
@@ -30,7 +41,7 @@ module.exports = function(app) {
       }
   });
   
-  app.get('/post', checkNotLogin);
+  app.post('/reg', checkNotLogin);
   app.post('/reg', function (req, res) {
     var name        = req.body.name,
         password    = req.body.password,
@@ -73,7 +84,7 @@ module.exports = function(app) {
     });
   });
   
-  app.get('/post', checkNotLogin);
+  app.get('/login', checkNotLogin);
   app.get('/login', function (req, res) {
       res.render('login', { 
         title:   'Reg',
@@ -83,7 +94,7 @@ module.exports = function(app) {
     });
   });
   
-  app.get('/post', checkNotLogin);
+  app.post('/login', checkNotLogin);
   app.post('/login', function (req, res) {
       var md5 = crypto.createHash('md5'),
       password = md5.update(req.body.password).digest('hex');
@@ -111,15 +122,30 @@ module.exports = function(app) {
         user:    req.session.user,
         success: req.flash('success').toString(),
         error:   req.flash('error').toString()
-    });
+        });
   });
   
-  app.get('/post', checkLogin);
+  app.post('/post', checkLogin);
   app.post('/post', function (req, res) {
-    
+      var currentUser = req.session.user;
+      var newPost = new Post({
+          postName:  currentUser.userName,
+          postTitle: req.body.postTitle,
+          postBody:  req.body.postBody,
+      });
+      newPost.save(function(err){
+          if(err) {
+              console.log(err);
+              req.flash('error', "发布失败!"); 
+              res.redirect('/');
+          } else {
+              req.flash('success', "发布成功!"); 
+              res.redirect('/');
+              }
+        });
   });
   
-  app.get('/post', checkLogin);
+  app.get('/logout', checkLogin);
   app.get('/logout', function (req, res) {
       req.session.user = null;
       req.flash('success', '登出成功!');
