@@ -1,5 +1,3 @@
-
-////////////new function
 var crypto = require('crypto'),
     model  = require('../models/user.js'),
     User   = model.User;
@@ -11,7 +9,13 @@ mongoose.connect(settings.url)
     
 module.exports = function(app) {
   app.get('/', function (req, res) {
-    res.render('index', { title: 'Express for szy' });
+      console.log(req.session.user);
+    res.render('index', { 
+        title:   'Express for szy',
+        user:    req.session.user,
+        success: req.flash('success').toString(),
+        error:   req.flash('error').toString()
+    });
   });
   
   app.get('/szy', function (req, res) {
@@ -19,7 +23,11 @@ module.exports = function(app) {
   });
   
   app.get('/reg', function (req, res) {
-    res.render('reg', { title: ' 注册 ' });
+      if(req.session.user) {
+          res.redirect('/');
+      } else {
+          res.render('reg', { title: ' 注册 ', user: null, success:null, error:null});
+      }
   });
   
   app.post('/reg', function (req, res) {
@@ -56,6 +64,7 @@ module.exports = function(app) {
                 console.log('======================create========================');
                 console.log(doc);
                 console.log('====================================================');
+                req.session.user = doc; //用户信息存入 session
                 req.flash('success', '注册成功!');
                 res.redirect('/');
             });
@@ -65,11 +74,31 @@ module.exports = function(app) {
   
   
   app.get('/login', function (req, res) {
-    res.render('login', { title: ' 登录 ' });
+      res.render('login', { 
+        title:   'Reg',
+        user:    req.session.user,
+        success: req.flash('success').toString(),
+        error:   req.flash('error').toString()
+    });
   });
   
   app.post('/login', function (req, res) {
-    
+      var md5 = crypto.createHash('md5'),
+      password = md5.update(req.body.password).digest('hex');
+      
+      var name     = req.body.name,
+          password = req.body.password;
+      User.findOne({userName: name, userPwd: password},function(err,doc){
+          if(err) console.log(err);
+          if(doc) {
+              req.flash('success', '登陆成功!');
+              req.session.user = doc;
+              res.redirect('/');
+          } else {
+              req.flash('error', '密码错误!'); 
+              res.redirect('/login');
+          }
+      });
   });
   
   app.get('/post', function (req, res) {
@@ -81,7 +110,9 @@ module.exports = function(app) {
   });
   
   app.get('/logout', function (req, res) {
-    
+      req.session.user = null;
+      req.flash('success', '登出成功!');
+      res.redirect('/');
   });
   
 };
