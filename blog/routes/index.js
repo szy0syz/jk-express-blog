@@ -2,7 +2,8 @@ var crypto = require('crypto'),
     model  = require('../models/user.js'),
     modelPost = require('../models/post.js'),
     User   = model.User,
-    Post   = modelPost.Post;
+    Post   = modelPost.Post,
+    markdown = require('markdown').markdown;
 
 var settings = require('../settings');
 var mongoose = require('mongoose');
@@ -132,7 +133,7 @@ module.exports = function(app) {
       var newPost = new Post({
           postName:  currentUser.userName,
           postTitle: req.body.postTitle,
-          postBody:  req.body.postBody,
+          postBody:  markdown.toHTML(req.body.postBody),
       });
       newPost.save(function(err){
           if(err) {

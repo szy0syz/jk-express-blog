@@ -16,6 +16,5 @@ var postSchema = new Schema({
     }
 });
 
-/* global db ????? */
-// module.export = db.model('user',userSchema,'user');
+
 exports.Post = mongoose.model('posts',postSchema,'posts');
