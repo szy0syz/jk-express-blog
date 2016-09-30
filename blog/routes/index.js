@@ -1,4 +1,5 @@
 var crypto = require('crypto'),
+    path   = require('path'),
     model  = require('../models/user.js'),
     modelPost = require('../models/post.js'),
     User   = model.User,
@@ -23,7 +24,20 @@ var storage = multer.diskStorage({
 })
 
 // var upload = multer({dest: './public/images/user', fieldSize: '1MB'});
-var upload = multer({storage: storage});
+var upload = multer({
+    storage: storage,
+    fileFilter: function(req,file,callback){
+        var ext = path.extname(file.originalname);
+        if(ext !== '.png' && ext !== '.jpg' && ext !== '.gif' && ext !== '.jpeg') {
+            return callback(new Error('Only images are allowed'))
+        }
+        callback(null, true)
+    },
+    limits:{
+        fileSize: 1024*1024
+    }
+});
+
     
 module.exports = function(app) {
   app.get('/', function (req, res) {
