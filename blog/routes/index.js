@@ -9,6 +9,21 @@ var settings = require('../settings');
 var mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 mongoose.connect(settings.url)
+
+var multer = require('multer');
+
+// multer's storage options
+var storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './public/images/user')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  }
+})
+
+// var upload = multer({dest: './public/images/user', fieldSize: '1MB'});
+var upload = multer({storage: storage});
     
 module.exports = function(app) {
   app.get('/', function (req, res) {
@@ -152,6 +167,25 @@ module.exports = function(app) {
       req.session.user = null;
       req.flash('success', '登出成功!');
       res.redirect('/');
+  });
+  
+  app.get('/upload', checkLogin);
+  app.get('/upload', function (req, res) {
+        res.render('upload', { 
+        title:   'upload',
+        user:    req.session.user,
+        success: req.flash('success').toString(),
+        error:   req.flash('error').toString()
+        });
+  });
+  
+  app.post('/upload', checkLogin);
+  app.post('/upload',  upload.fields([{name: 'file1'},{name: 'file2'}]), function (req, res) { 
+      for(var i in req.files) {
+        console.log(req.files[i]);
+      }
+      req.flash('success', '文件上传成功!');
+      res.redirect('/upload');
   });
   
   function checkLogin(req, res, next){

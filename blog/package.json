@@ -19,6 +19,7 @@
     "mongodb": "~2.2.10",
     "mongoose":"~4.6.1",
     "date-format":"~0.0.2",
-    "markdown":"~0.5.0"
+    "markdown":"~0.5.0",
+    "multer":"~1.2.0"
   }
 }
