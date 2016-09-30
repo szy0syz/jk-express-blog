@@ -41,7 +41,6 @@ var upload = multer({
     
 module.exports = function(app) {
   app.get('/', function (req, res) {
-      var format = require('date-format');
       Post.find(function(err,posts){
           if(err) {
               posts = [];
@@ -55,8 +54,64 @@ module.exports = function(app) {
                 });
             }
       });
-      
+  });
+  
+  app.get('/u/:userName',function(req, res){
+      User.findOne({userName: req.params.userName}, function(err, doc){
+          if(!doc) {
+              req.flash('error',"用户不存在!");
+              res.redirect('/');
+          } else{
+              Post.find({postName:req.params.userName}, function(err, docs){
+                  res.render('index', { 
+                    title:   doc.userName + "'s all posts",
+                    user:    req.session.user,
+                    success: req.flash('success').toString(),
+                    error:   req.flash('error').toString(),
+                    posts:   docs
+                 });
+              })
+          }
+      });
+  });
 
+  app.get('/u/:postName/:postTitle',function(req, res){
+      
+    //   方法一 too conplex!  
+    //   var query = Post.find({});
+    //   query.where('postName',req.params.postName);
+    //   query.where('postTitle',req.params.postTitle);
+    //   query.limit(1);
+    //   query.exec(function(err,docs){
+    //       if(!docs[0]) {
+    //           req.flash('error',"文章不存在!");
+    //           res.redirect('/');
+    //      } else {
+    //           res.render('article', { 
+    //                 title:   docs[0].postName + "'s article: " + docs[0].postTitle,
+    //                 user:    req.session.user,
+    //                 success: req.flash('success').toString(),
+    //                 error:   req.flash('error').toString(),
+    //                 post:    docs[0]
+    //             });
+    //         }
+    //   });
+      
+      Post.findOne({ postName: req.params.postName, postTitle: req.params.postTitle}, function(err,doc){
+         if(!doc) {
+              req.flash('error',"文章不存在!");
+              res.redirect('/');
+         } else {
+              res.render('article', { 
+                    title:   doc.postName + "'s article: " + doc.postTitle,
+                    user:    req.session.user,
+                    success: req.flash('success').toString(),
+                    error:   req.flash('error').toString(),
+                    post:    doc
+                });
+            }
+      });
+    
   });
   
   app.get('/szy', function (req, res) {
