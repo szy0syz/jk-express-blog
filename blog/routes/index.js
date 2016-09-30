@@ -11,6 +11,7 @@ mongoose.connect(settings.url)
     
 module.exports = function(app) {
   app.get('/', function (req, res) {
+      var format = require('date-format');
       Post.find(function(err,posts){
           if(err) {
               posts = [];
