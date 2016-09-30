@@ -79,12 +79,6 @@ module.exports = function(app) {
         password_re = req.body['password-repeat'],
         eamil       = req.body.eamil;
     
-    var newUser = new User({
-        userName:   name,
-        userPwd:    password,
-        userEmail:  eamil
-    });
-    
     //检验用户两次输入的密码是否一致
     if (password_re != password) {
         req.flash('error', '两次输入的密码不一致!'); 
@@ -93,6 +87,12 @@ module.exports = function(app) {
     //生成密码的 md5 值
     var md5 = crypto.createHash('md5'),
         password = md5.update(req.body.password).digest('hex');
+    
+    var newUser = new User({
+        userName:   name,
+        userPwd:    password, // md5 pwd
+        userEmail:  eamil
+    });
     
     //检查用户名是否已经存在 
     User.findOne({userName: name},function(err,doc){
@@ -131,7 +131,7 @@ module.exports = function(app) {
       password = md5.update(req.body.password).digest('hex');
       
       var name     = req.body.name,
-          password = req.body.password;
+          password = password; // md5 pwd
       User.findOne({userName: name, userPwd: password},function(err,doc){
           if(err) console.log(err);
           if(doc) {
