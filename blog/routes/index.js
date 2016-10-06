@@ -1,9 +1,8 @@
 var crypto = require('crypto'),
     path   = require('path'),
-    model  = require('../models/user.js'),
-    modelPost = require('../models/post.js'),
-    User   = model.User,
-    Post   = modelPost.Post,
+    User   = require('../models/user.js').User,
+    Post   = require('../models/post.js').Post,
+    Comment= require('../models/comment.js').Comment,
     markdown = require('markdown').markdown;
 
 var settings = require('../settings');
@@ -102,17 +101,43 @@ module.exports = function(app) {
               req.flash('error',"文章不存在!");
               res.redirect('/');
          } else {
-              res.render('article', { 
+              Comment.find({postId:doc._id},function(err,coms){
+                  if(err) console.log(err);
+                    res.render('article', { 
                     title:   doc.postName + "'s article: " + doc.postTitle,
                     user:    req.session.user,
                     success: req.flash('success').toString(),
                     error:   req.flash('error').toString(),
-                    post:    doc
+                    post:    doc,
+                    comments: coms
                 });
+              });
+
             }
       });
-    
   });
+  
+  // push a comment
+  app.post('/comment', function (req, res) {
+      var newComment = Comment({
+          postId: req.body.postId,
+          commentName: req.body.name,
+          commentEmail: req.body.email,
+          commentWebsite: req.body.website,
+          commentContent: req.body.content
+      });
+      if(newComment.postId){
+          newComment.save(function(err,doc){
+              if(err) {
+                  console.log(err);
+                  req.flash('error', '留言失败!');
+              }
+          });
+      }else{
+          req.flash('success', '留言成功!');
+      }
+      res.redirect('back');
+  });  
   
   app.get('/szy', function (req, res) {
     res.send('my name is szy.');
@@ -255,6 +280,58 @@ module.exports = function(app) {
       }
       req.flash('success', '文件上传成功!');
       res.redirect('/upload');
+  });
+  
+  app.get('/edit/:postName/:postTitle', checkLogin);
+  app.get('/edit/:postName/:postTitle',function(req,res){
+      var currentUser = req.session.user;
+      Post.findOne({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
+          if(err) {
+              console.log(err);
+              res.flash('error', err)
+              res.redirect('back');
+          } else {
+              res.render('edit',{
+                  title: " 编辑 ",
+                  user:    req.session.user,
+                  post:    doc,
+                  success: req.flash('success').toString(),
+                  error:   req.flash('error').toString()
+              });
+          }
+          
+      });
+  });
+  
+  app.post('/edit/:postName/:postTitle', checkLogin);
+  app.post('/edit/:postName/:postTitle',function(req,res){
+      var currentUser = req.session.user;
+      Post.findOneAndUpdate({postName: currentUser.userName, postTitle: req.params.postTitle},{postBody:req.body.postBody},function(err,doc){
+          if(err) {
+              console.log(err);
+              res.flash('error', err)
+              res.redirect('back');
+          } else {
+              req.flash('success', '编辑成功!');
+              res.redirect('/');
+          }
+      });
+    //   Post.findOne({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
+    //       if(err) {
+    //           console.log(err);
+    //           res.flash('error', err)
+    //           res.redirect('back');
+    //       } else {
+    //           res.render('edit',{
+    //               title: " 编辑 ",
+    //               user:    req.session.user,
+    //               post:    doc,
+    //               success: req.flash('success').toString(),
+    //               error:   req.flash('error').toString()
+    //           });
+    //       }
+          
+    //   });
   });
   
   function checkLogin(req, res, next){

@@ -1,9 +1,12 @@
 <%- include header %>
-  <p><h2><a href="#"><%= post.postTitle %></a></h2></p>
-  <p class="info">
-    作者：<a href="#"><%= post.postName %></a> | 
-    日期：<%= post.createDate.std %>
-  </p>
-  <p><%- post.postBody %></p>
-  <hr />
+<p>
+  <span><a class="edit" href="/edit/<%= post.postName %>/<%= post.postTitle %>">编辑</a></span>
+  <span><a class="edit" href="/remove/<%= post.postName %>/<%= post.postTitle %>">删除</a></span>
+</p>
+<p class="info">
+  作者：<a href="/u/<%= post.postName %>"><%= post.postName %></a> | 
+  日期：<%= post.createDate.std %>
+</p>
+<p><%- post.postBody %></p>
+<%- include comment %>
 <%- include footer %>

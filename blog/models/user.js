@@ -8,6 +8,4 @@ var userSchema = new Schema({
     createDate: { type: Date, default: Date.now }
 });
 
-/* global db ????? */
-// module.export = db.model('user',userSchema,'user');
 exports.User = mongoose.model('users',userSchema,'users');
