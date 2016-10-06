@@ -316,22 +316,21 @@ module.exports = function(app) {
               res.redirect('/');
           }
       });
-    //   Post.findOne({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
-    //       if(err) {
-    //           console.log(err);
-    //           res.flash('error', err)
-    //           res.redirect('back');
-    //       } else {
-    //           res.render('edit',{
-    //               title: " 编辑 ",
-    //               user:    req.session.user,
-    //               post:    doc,
-    //               success: req.flash('success').toString(),
-    //               error:   req.flash('error').toString()
-    //           });
-    //       }
-          
-    //   });
+  });
+  
+  app.get('/remove/:postName/:postTitle', checkLogin);
+  app.get('/remove/:postName/:postTitle',function(req,res){
+      var currentUser = req.session.user;
+      Post.findOneAndRemove({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
+          if(err) {
+              console.log(err);
+              res.flash('error', err)
+              res.redirect('back');
+          } else {
+              req.flash('success', ' 删除成功!');
+              res.redirect('/');
+          }
+      });
   });
   
   function checkLogin(req, res, next){
