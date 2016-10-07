@@ -95,7 +95,7 @@ module.exports = function(app) {
     //             });
     //         }
     //   });
-      
+      console.log(encodeURI(req.params.postTitle));
       Post.findOne({ postName: req.params.postName, postTitle: req.params.postTitle}, function(err,doc){
          if(!doc) {
               req.flash('error',"文章不存在!");
@@ -321,14 +321,27 @@ module.exports = function(app) {
   app.get('/remove/:postName/:postTitle', checkLogin);
   app.get('/remove/:postName/:postTitle',function(req,res){
       var currentUser = req.session.user;
-      Post.findOneAndRemove({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
+      Post.findOne({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
           if(err) {
               console.log(err);
               res.flash('error', err)
               res.redirect('back');
           } else {
-              req.flash('success', ' 删除成功!');
-              res.redirect('/');
+              Post.remove({_id: doc._id},function(err,rmDoc){
+                  if(err) {
+                      console.log(err);
+                      res.flash('error', err)
+                      res.redirect('back');
+                  } else {
+                      // remove this post's comments.
+                      Comment.remove({postId: doc._id},function(err,result){
+                          if(err) console.log(err);
+                          else console.log("remove some comments.");
+                      });
+                      req.flash('success', ' 删除成功!');
+                      res.redirect('/');
+                  }
+              });
           }
       });
   });
