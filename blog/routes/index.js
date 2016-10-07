@@ -37,40 +37,103 @@ var upload = multer({
     }
 });
 
+var getListPost =  function (pageNumber, pageSize, callback){
+    var query = Post.find({});
+    query.sort({createDate:-1}).skip((pageNumber-1)*pageSize).limit(pageSize);
+    query.exec(function(err,docs){
+       if(err) console.log(err);
+       else if(docs){
+           Post.find({}).count(function(err,count){
+               if(err) console.log(err);
+               callback(null, docs, count);
+           });
+       }else{
+           callback(null,[],-1);
+       }
+    });
+  }
+
+var getListPostByUserName =  function (pageNumber, pageSize, userName, callback){
+    var query = Post.find({postName: userName}); // filter by userName
+    query.sort({createDate:-1}).skip((pageNumber-1)*pageSize).limit(pageSize);
+    query.exec(function(err,docs){
+       if(err) console.log(err);
+       else if(docs){
+           Post.find({postName: userName}).count(function(err,count){
+               if(err) console.log(err);
+               callback(null, docs, count);
+           });
+       }else{
+           callback(null,[],-1);
+       }
+    });
+  }
     
 module.exports = function(app) {
+    
   app.get('/', function (req, res) {
-      Post.find(function(err,posts){
-          if(err) {
-              posts = [];
-          } else {
-                res.render('index', { 
-                title:   'Express for szy',
-                user:    req.session.user,
-                success: req.flash('success').toString(),
-                error:   req.flash('error').toString(),
-                posts:   posts
-                });
-            }
-      });
+    var pageIndex = req.query.p ? parseInt(req.query.p) : 1;
+    // 分页
+    getListPost(pageIndex, 10, function(err, docs, total){
+        res.render('index', { 
+        title:   'Express for szy',
+        user:    req.session.user,
+        success: req.flash('success').toString(),
+        error:   req.flash('error').toString(),
+        posts:   docs,
+        page:    parseInt(pageIndex),
+        isFirstPage: parseInt(pageIndex) - 1 === 0,
+        isLastPage:  parseInt(total/10) + 1 <= pageIndex
+        });            
+    });
   });
   
+//   app.get('/page/:pageIndex',function(req,res){
+//      var pageIndex = parseInt(req.query.p);
+//      getListPost(pageIndex, 10, function(err, docs, total){
+//         res.render('index', { 
+//         title:   'Express for szy',
+//         user:    req.session.user,
+//         success: req.flash('success').toString(),
+//         error:   req.flash('error').toString(),
+//         posts:   docs,
+//         page:    parseInt(pageIndex),
+//         isFirstPage: parseInt(pageIndex) - 1 === 0,
+//         isLastPage:  parseInt(total/10) + 1 <= pageIndex
+//         }); 
+//      });
+      
+//   });
+  
   app.get('/u/:userName',function(req, res){
-      User.findOne({userName: req.params.userName}, function(err, doc){
+      var userName = req.params.userName;
+      var pageIndex = req.query.p ? parseInt(req.query.p) : 1;
+      User.findOne({userName: userName}, function(err, doc){
           if(!doc) {
               req.flash('error',"用户不存在!");
               res.redirect('/');
           } else{
-              Post.find({postName:req.params.userName}, function(err, docs){
-                  res.render('index', { 
+              getListPostByUserName(pageIndex, 10, userName, function(err, docs, total){
+                    res.render('index', { 
                     title:   doc.userName + "'s all posts",
                     user:    req.session.user,
                     success: req.flash('success').toString(),
                     error:   req.flash('error').toString(),
-                    posts:   docs
-                 });
-              })
-          }
+                    posts:   docs,
+                    page:    parseInt(pageIndex),
+                    isFirstPage: parseInt(pageIndex) - 1 === 0,
+                    isLastPage:  parseInt(total/10) + 1 <= pageIndex
+              });
+            //   Post.find({postName:req.params.userName}, function(err, docs){
+            //         res.render('index', { 
+            //         title:   doc.userName + "'s all posts",
+            //         user:    req.session.user,
+            //         success: req.flash('success').toString(),
+            //         error:   req.flash('error').toString(),
+            //         posts:   docs
+            //       });
+            //   })
+          })}
       });
   });
 
@@ -95,7 +158,7 @@ module.exports = function(app) {
     //             });
     //         }
     //   });
-      console.log(encodeURI(req.params.postTitle));
+      //console.log(decodeURIComponent(req.params.postTitle));
       Post.findOne({ postName: req.params.postName, postTitle: req.params.postTitle}, function(err,doc){
          if(!doc) {
               req.flash('error',"文章不存在!");
