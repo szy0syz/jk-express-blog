@@ -37,7 +37,7 @@
 - [ ] 使用Disqus
 - [ ] 使用generic pool
 - [ ] 使用Handlebars
-- [x] 使用KindEditor
+- [x] ~~使用KindEditor~~
 - [ ] 使用Passport
 
 ----
