@@ -305,7 +305,8 @@ module.exports = function(app) {
       var newPost = new Post({
           postName:  currentUser.userName,
           postTitle: req.body.postTitle,
-          postBody:  markdown.toHTML(req.body.postBody),
+          postBody:  req.body.postBody, // don't use markdown
+          //postBody:  markdown.toHTML(req.body.postBody),
       });
       newPost.save(function(err){
           if(err) {
