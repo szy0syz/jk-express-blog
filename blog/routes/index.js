@@ -105,6 +105,30 @@ module.exports = function(app) {
       
 //   });
   
+  app.get('/p/:_id', function(req, res){
+      Post.findById(req.params._id, function(err, doc){
+         if(err) console.log(err);
+         else{
+             if(!doc) {
+                 req.flash('error',"文章不存在!");
+                 res.redirect('/');
+             }else{
+                  Comment.find({postId:doc._id},function(err,coms){
+                  if(err) console.log(err);
+                    res.render('article', { 
+                    title:   doc.postName + "'s article: " + doc.postTitle,
+                    user:    req.session.user,
+                    success: req.flash('success').toString(),
+                    error:   req.flash('error').toString(),
+                    post:    doc,
+                    comments: coms
+                });
+              });
+            }
+         }
+      });
+  })
+  
   app.get('/u/:userName',function(req, res){
       var userName = req.params.userName;
       var pageIndex = req.query.p ? parseInt(req.query.p) : 1;
@@ -305,7 +329,7 @@ module.exports = function(app) {
       var newPost = new Post({
           postName:  currentUser.userName,
           postTitle: req.body.postTitle,
-          postBody:  req.body.postBody, // don't use markdown
+          postBody:  req.body.postBody // don't use markdown
           //postBody:  markdown.toHTML(req.body.postBody),
       });
       newPost.save(function(err){
