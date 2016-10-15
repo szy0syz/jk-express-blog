@@ -21,6 +21,10 @@
 ##### 2016-10-08 v0.5
 * 发帖功能页面TextArea区使用KindEditor编辑器
 
+##### 2016-10-14 v0.6
+* 使用MongoDB _id 查询
+* 修复首页user超链接
+* 
 ----
 ### Todo
 - [x] ~~删除某帖子时，其下游Comments也删除；~~
@@ -35,13 +39,14 @@
 - [ ] 增加头像
 - [ ] 增加转载功能和转载统计
 - [ ] 增加日志功能
-- [ ] 使用MongoDB _id 查询
+- [x] 使用MongoDB _id 查询
 - [ ] 使用Async
 - [ ] 使用Disqus
 - [ ] 使用generic pool
 - [ ] 使用Handlebars
 - [x] ~~使用KindEditor~~
 - [ ] 使用Passport
+- [x] 修复首页user超链接
 
 ----
 ### Summary
@@ -50,3 +55,4 @@
 * 记住了post方法要用req.body；get方法里要用req.params ！！！！！
 * 在Node中一定要用callback方式返回值，千万别用return，坑啊！！！
 * 真的再次体会到了Node里异步的优势，全部使用回调函数返回值，不用return！！！
+* 在url里最好别用中文，后台会乱码，最好解决方案是用query方式传值！！！

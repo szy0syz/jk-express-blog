@@ -105,6 +105,7 @@ module.exports = function(app) {
       
 //   });
   
+  //使用_id查询文章
   app.get('/p/:_id', function(req, res){
       Post.findById(req.params._id, function(err, doc){
          if(err) console.log(err);
@@ -128,8 +129,32 @@ module.exports = function(app) {
          }
       });
   })
+
+  app.get('/u',function(req, res){
+      var userName = req.query.userName;
+      var pageIndex = req.query.p ? parseInt(req.query.p) : 1;
+      User.findOne({userName: userName}, function(err, doc){
+          if(!doc) {
+              req.flash('error',"用户不存在!");
+              res.redirect('/');
+          } else{
+              getListPostByUserName(pageIndex, 10, userName, function(err, docs, total){
+                    res.render('index', { 
+                    title:   doc.userName + "'s all posts",
+                    user:    req.session.user,
+                    success: req.flash('success').toString(),
+                    error:   req.flash('error').toString(),
+                    posts:   docs,
+                    page:    parseInt(pageIndex),
+                    isFirstPage: parseInt(pageIndex) - 1 === 0,
+                    isLastPage:  parseInt(total/10) + 1 <= pageIndex
+              });
+          })}
+      });
+  });  
   
   app.get('/u/:userName',function(req, res){
+      console.log(req.query.userName);
       var userName = req.params.userName;
       var pageIndex = req.query.p ? parseInt(req.query.p) : 1;
       User.findOne({userName: userName}, function(err, doc){
@@ -148,15 +173,6 @@ module.exports = function(app) {
                     isFirstPage: parseInt(pageIndex) - 1 === 0,
                     isLastPage:  parseInt(total/10) + 1 <= pageIndex
               });
-            //   Post.find({postName:req.params.userName}, function(err, docs){
-            //         res.render('index', { 
-            //         title:   doc.userName + "'s all posts",
-            //         user:    req.session.user,
-            //         success: req.flash('success').toString(),
-            //         error:   req.flash('error').toString(),
-            //         posts:   docs
-            //       });
-            //   })
           })}
       });
   });
@@ -182,7 +198,11 @@ module.exports = function(app) {
     //             });
     //         }
     //   });
-      //console.log(decodeURIComponent(req.params.postTitle));
+      req.setEncoding('utf8');
+      console.log(req.params);
+      console.log(req.params.postTitle);//decodeURI
+      console.log(decodeURI(req.params.postTitle));
+      console.log(decodeURIComponent(req.params.postTitle));//decodeURIComponent()
       Post.findOne({ postName: req.params.postName, postTitle: req.params.postTitle}, function(err,doc){
          if(!doc) {
               req.flash('error',"文章不存在!");
