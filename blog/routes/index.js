@@ -88,23 +88,6 @@ module.exports = function(app) {
     });
   });
   
-//   app.get('/page/:pageIndex',function(req,res){
-//      var pageIndex = parseInt(req.query.p);
-//      getListPost(pageIndex, 10, function(err, docs, total){
-//         res.render('index', { 
-//         title:   'Express for szy',
-//         user:    req.session.user,
-//         success: req.flash('success').toString(),
-//         error:   req.flash('error').toString(),
-//         posts:   docs,
-//         page:    parseInt(pageIndex),
-//         isFirstPage: parseInt(pageIndex) - 1 === 0,
-//         isLastPage:  parseInt(total/10) + 1 <= pageIndex
-//         }); 
-//      });
-      
-//   });
-  
   //使用_id查询文章
   app.get('/p/:_id', function(req, res){
       Post.findById(req.params._id, function(err, doc){

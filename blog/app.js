@@ -17,8 +17,15 @@ var settings = require('./settings');
 // NaN
 // global.db = mongoose.createConnection(settings.url);
 
+var fs = require('fs');
+var accessLog = fs.createWriteStream('access.log', {flags: 'a'});
+var errorLog = fs.createWriteStream('error.log', {flags: 'a'});
+
 var app = express();
 
+// 日志功能
+app.use(logger('dev'));
+app.use(logger({stream: accessLog}));
 app.use(flash());
 
 app.use(session({
@@ -47,6 +54,11 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(function (err, req, res, next) {
+  var meta = '[' + new Date() + '] ' + req.url + '\n';
+  errorLog.write(meta + err.stack + '\n');
+  next();
+});
 
 // app.use('/', routes);
 // app.use('/users', users);
