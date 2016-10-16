@@ -373,10 +373,10 @@ module.exports = function(app) {
       res.redirect('/upload');
   });
   
-  app.get('/edit/:postName/:postTitle', checkLogin);
-  app.get('/edit/:postName/:postTitle',function(req,res){
+  app.get('/edit/:_id', checkLogin);
+  app.get('/edit/:_id',function(req,res){
       var currentUser = req.session.user;
-      Post.findOne({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
+      Post.findById(req.params._id,function(err,doc){
           if(err) {
               console.log(err);
               res.flash('error', err)
@@ -394,10 +394,10 @@ module.exports = function(app) {
       });
   });
   
-  app.post('/edit/:postName/:postTitle', checkLogin);
-  app.post('/edit/:postName/:postTitle',function(req,res){
+  app.post('/edit/:_id', checkLogin);
+  app.post('/edit/:_id',function(req,res){
       var currentUser = req.session.user;
-      Post.findOneAndUpdate({postName: currentUser.userName, postTitle: req.params.postTitle},{postBody:req.body.postBody},function(err,doc){
+      Post.findByIdAndUpdate(req.params._id,{postBody:req.body.postBody},function(err,doc){
           if(err) {
               console.log(err);
               res.flash('error', err)
@@ -409,10 +409,10 @@ module.exports = function(app) {
       });
   });
   
-  app.get('/remove/:postName/:postTitle', checkLogin);
-  app.get('/remove/:postName/:postTitle',function(req,res){
+  app.get('/remove/:_id', checkLogin);
+  app.get('/remove/:_id',function(req,res){
       var currentUser = req.session.user;
-      Post.findOne({postName: currentUser.userName, postTitle: req.params.postTitle},function(err,doc){
+      Post.findById(req.params._id,function(err,doc){
           if(err) {
               console.log(err);
               res.flash('error', err)
