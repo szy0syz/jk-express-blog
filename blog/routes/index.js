@@ -446,6 +446,37 @@ module.exports = function(app) {
         }); 
   });
   
+  app.get('/archive',function(req, res){
+      var query = Post.find({});
+      query.select('postName postTitle createDate.std');
+      query.sort({createDate: -1});
+      query.exec(function(err,docs){
+          if(err) {console.log(err);}
+          else {
+              var newDocs = new Array();
+              // var temp = []; //如果把temp声明在外面，则其值只有一个，不变？
+              for(var i=0; i<docs.length; i++){
+                 var temp = [];
+                 temp._id = docs[i]._id;
+                 temp.postName = docs[i].postName;
+                 temp.postTitle = docs[i].postTitle;
+                 temp.year = docs[i].createDate.std.substring(0,4); 
+                 temp.month = docs[i].createDate.std.substring(5,7); 
+                 temp.day = docs[i].createDate.std.substring(8,10);
+                 newDocs[i] = temp;
+              }    
+                res.render('archive',{
+                title: " 文章存档",
+                user:    req.session.user,
+                posts:    newDocs,
+                success: req.flash('success').toString(),
+                error:   req.flash('error').toString()
+                }); 
+          }
+      });
+
+  });  
+  
   function checkLogin(req, res, next){
     if (!req.session.user) {
     req.flash('error', '未登录!'); 
