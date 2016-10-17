@@ -25,7 +25,7 @@ var app = express();
 
 // 日志功能
 app.use(logger('dev'));
-app.use(logger({stream: accessLog}));
+app.use(logger("default", {stream: accessLog}));
 app.use(flash());
 
 app.use(session({
