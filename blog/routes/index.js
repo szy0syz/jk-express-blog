@@ -71,6 +71,7 @@ var getListPostByUserName =  function (pageNumber, pageSize, userName, callback)
     
 module.exports = function(app) {
     
+  // 主页   
   app.get('/', function (req, res) {
     var pageIndex = req.query.p ? parseInt(req.query.p) : 1;
     // 分页
@@ -96,9 +97,22 @@ module.exports = function(app) {
              if(!doc) {
                  req.flash('error',"文章不存在!");
                  res.redirect('/');
-             }else{
+             } else {
+                  //doc.update({$inc: {pv:1}}, { w: 1 }); //update方法属于model，在document上肯定是无效的！！！
+                  doc.pv += 1; // 阅读数+1
+                  doc.save(function(err, raw){
+                      if(err) console.log(err);
+                      //console.log(raw);
+                  });
+                //  这种方法可以用，但复杂了点。
+                //   Post.update({_id: doc._id}, {$inc: {pv:1}}, function(err, raw){
+                //       if(err) console.log(err);
+                //       console.log(raw); //{ ok: 1, nModified: 1, n: 1 } 
+                //   });
+                  console.log(doc.pv);
                   Comment.find({postId:doc._id},function(err,coms){
                   if(err) console.log(err);
+                  else {
                     res.render('article', { 
                     title:   doc.postName + "'s article: " + doc.postTitle,
                     user:    req.session.user,
@@ -106,7 +120,8 @@ module.exports = function(app) {
                     error:   req.flash('error').toString(),
                     post:    doc,
                     comments: coms
-                });
+                    });
+                  }
               });
             }
          }
@@ -454,9 +469,9 @@ module.exports = function(app) {
           if(err) {console.log(err);}
           else {
               var newDocs = new Array();
-              // var temp = []; //如果把temp声明在外面，则其值只有一个，不变？
+              //var temp = {}; //如果把temp声明在外面，则其值只有一个，不变？
               for(var i=0; i<docs.length; i++){
-                 var temp = [];
+                 var temp = {}; //空对象
                  temp._id = docs[i]._id;
                  temp.postName = docs[i].postName;
                  temp.postTitle = docs[i].postTitle;

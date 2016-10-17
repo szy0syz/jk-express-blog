@@ -13,7 +13,8 @@ var postSchema = new Schema({
     modifyDate: { 
         dft:{ type: Date, default: Date.now },
         std:{ type: String, default: format.asString('yyyy-MM-dd hh:mm',this.dft) }
-    }
+    },
+    pv: { type: Number, default: 0 }
 });
 
 
