@@ -11,4 +11,9 @@ var commentSchema = new Schema({
     createDate: { type: String, default: format.asString('yyyy-MM-dd hh:mm',this.dft) }
 });
 
-exports.Comment = mongoose.model('commetns',commentSchema,'commetns');
+var Comment = mongoose.model('commetns', commentSchema,'commetns');
+var promiseObj = require('bluebird');
+promiseObj.promisifyAll(Comment);
+promiseObj.promisifyAll(Comment.prototype);
+
+exports.Comment = Comment;

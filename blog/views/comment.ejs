@@ -1,6 +1,6 @@
 <br />
-<% if (comments) { %>
-    <%comments.forEach(function (comment, index) { %>
+<% if (model.comments) { %>
+    <%model.comments.forEach(function (comment, index) { %>
     <p><a href="<%= comment.commentWebsite %>"><%= comment.commentName %></a>
     <span class="info"> 回复于 <%= comment.createDate %></span></p>
     <p><%- comment.commentContent %></p>
@@ -18,7 +18,7 @@
   邮箱：<input type="text" name="email" /><br />
   网址：<input type="text" name="website" value="http://" /><br />
 <% } %>
-  <input type="hidden" name="postId" value="<%= post._id %>" /><br />
+  <input type="hidden" name="postId" value="<%= model._id %>" /><br />
   <textarea name="content" rows="5" cols="80"></textarea><br />
   <input type="submit" value="留言" />
 </form>

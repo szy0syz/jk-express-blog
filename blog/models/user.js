@@ -8,4 +8,9 @@ var userSchema = new Schema({
     createDate: { type: Date, default: Date.now }
 });
 
-exports.User = mongoose.model('users',userSchema,'users');
+var User = mongoose.model('users', userSchema,'users');
+var promiseObj = require('bluebird');
+promiseObj.promisifyAll(User);
+promiseObj.promisifyAll(User.prototype);
+
+exports.User = User;

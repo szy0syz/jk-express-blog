@@ -3,15 +3,18 @@ var crypto = require('crypto'),
     User   = require('../models/user.js').User,
     Post   = require('../models/post.js').Post,
     Comment= require('../models/comment.js').Comment,
+    Tags   = require('../models/tags.js').Tags,
     markdown = require('markdown').markdown;
 
 var settings = require('../settings');
 var mongoose = require('mongoose');
-mongoose.Promise = global.Promise;
+//mongoose.Promise = global.Promise;
 mongoose.connect(settings.url)
 
-var multer = require('multer');
+var Promise = require("bluebird");
+var Join = Promise.join;
 
+var multer = require('multer');
 // multer's storage options
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -37,20 +40,103 @@ var upload = multer({
     }
 });
 
+// 所有文章
 var getListPost =  function (pageNumber, pageSize, callback){
     var query = Post.find({});
     query.sort({createDate:-1}).skip((pageNumber-1)*pageSize).limit(pageSize);
-    query.exec(function(err,docs){
-       if(err) console.log(err);
-       else if(docs){
-           Post.find({}).count(function(err,count){
-               if(err) console.log(err);
-               callback(null, docs, count);
-           });
-       }else{
-           callback(null,[],-1);
-       }
+    //好激动，哥的异步力量要觉醒了~~~
+    query.exec().then(function(postList){
+        //console.log(postList); //OK
+        //callback(null,[],-1);
+        Post.countAsync().then(function(count){
+            //console.log("count: " + count); //OK
+            var postViewModels = [];
+            Promise.map(postList, function(doc){
+                var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
+                var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
+                return Join(tagQuery, commentQuery, function(tags, comments){ //如果在循环里还有查询，只能用join连接起来！
+                    var model = {};
+                    model            = doc;   //这里不应该偷懒，应该改一哈！
+                    model.tags       = tags;  //衍生属性，怎么打印不出来啊！
+                    model.commentQty = comments.length;
+                    return model;
+                })
+            }).then(function(docList){
+                callback(null,docList,count);
+            }).error(function(e){
+                callback(e,[],-1);
+            });
+            
+            
+            //console.log("count: " + postViewModels); //xx
+        });
     });
+    
+    // query.exec().then(function(postList){
+    //     if(postList) {
+    //         Post.find({}).then(function(allList){ //查所有文章数量
+    //         var postViewModels = [];
+    //         postList.forEach(function(doc, index){
+    //             var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName");
+    //             var commentQuery = Comment.find({postId:doc._id}).select("_id");
+    //             tagQuery.exec().then(function(tags){
+    //                 //console.log(tags); //OK
+    //                 //console.log(allList); //OK
+    //                 commentQuery.exec().then(function(comments){
+    //                     var postViewModel = {};
+    //                     //console.log(allList); //OK
+    //                     //console.log(comments); //OK
+    //                     postViewModel            = doc;
+    //                     postViewModel.tags       = tags; // [{...}, {...}]
+    //                     postViewModel.commentQty = comments.length; // comment qty
+    //                     postViewModels.push(postViewModel);
+    //                     //console.log(postViewModel.tags);
+    //                 });
+    //             });
+    //         });
+    //         console.log(postViewModels);
+    //         }).then(function(list){
+    //             //console.log(list[1]);
+    //             callback(null,list,allList.length);
+    //         });
+    //     }
+    //     else {
+    //         callback(null,[],-1);
+    //     }
+    // });
+    
+    
+    // query.exec(function(err,docs){
+    // // var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName");
+    // // var commentQuery = Comment.find({postId:doc._id}).sort({createDate: 1});
+    //     //此处需要重构！！！重新生成对象了！！
+    //     if(err) console.log(err);
+    //     else if(docs){
+    //         Post.find({}).count(function(err,count){
+    //             if(err) console.log(err);
+    //             var postViewModels = [];
+    //             docs.forEach(function(doc, index){
+    //                 // console.log(doc); //有值
+    //                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName");
+    //                 var commentQuery = Comment.find({postId:doc._id}).select("_id");
+    //                 var postViewModel = {}; // 这里最好是new，别这样整，后期做了。
+    //                 tagQuery.exec(function(err, tagDocs){
+    //                     commentQuery.exec(function(err, commentDocs){
+    //                         postViewModel            = doc;  // obj
+    //                         postViewModel.tags       = tagDocs; // [{...}, {...}]
+    //                         postViewModel.commentQty = commentDocs.length; // comment qty
+    //                         postViewModels.push(postViewModel);
+    //                     });
+    //                 });
+    //             });
+    //             //http://stackoverflow.com/questions/25798691/mongoose-with-bluebird-promisifyall-saveasync-on-model-object-results-in-an-ar
+    //             //console.log(postViewModels); //null
+    //             callback(null, postViewModels, count);
+    //         });
+    //   }else{
+    //       callback(null,[],-1);
+    //   }
+    // });
   }
 
 var getListPostByUserName =  function (pageNumber, pageSize, userName, callback){
@@ -60,14 +146,55 @@ var getListPostByUserName =  function (pageNumber, pageSize, userName, callback)
        if(err) console.log(err);
        else if(docs){
            Post.find({postName: userName}).count(function(err,count){
-               if(err) console.log(err);
-               callback(null, docs, count);
+                if(err) console.log(err);
+                
+                callback(null, docs, count);
            });
        }else{
            callback(null,[],-1);
        }
     });
-  }
+}
+
+var getPostById = function (id, callback) {
+    // 类似于三层模式里BLL里的方法
+    Post.findById(id, function(err, doc){
+        if(err) console.log(err);
+        if(!doc) { //文章不存在
+            callback('文章不存在');
+        }
+        else { //文章存在
+            //标签
+            var postViewModel = {};
+            var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName");
+            var commentQuery = Comment.find({postId:doc._id}).sort({createDate: 1});
+            tagQuery.exec(function(err, tagDocs){
+                commentQuery.exec(function(err, commentDocs){
+                    postViewModel = doc; //obj
+                    postViewModel.tags = tagDocs; // [{...}, {...}]
+                    postViewModel.comments = commentDocs; // [{...}, {...}]
+                    postViewModel.commentQty = commentDocs.length; // comment qty
+                    callback(null, postViewModel);
+                });
+            });
+
+            // Tags.find({_id: {$in:doc.postTags}}, function(err, docs){
+            //     console.log(docs);
+            // })
+            // doc.postTags.forEach(function(val, index){
+            //     Tags.findById(val, function(err, tagDoc){
+            //         if(err) console.log(err);
+            //         var tagRaw = {};
+            //         tagRaw._id = tagDoc._id;
+            //         tagRaw.tagName = tagDoc.tagName;
+            //         tagList[index] = tagRaw;  // 有一次掉入异步的坑里
+            //         console.log("tag;;;; " + tagRaw.tagName);
+            //     });
+            //     console.log("tagl: xxx  " + tagList + "nnn");
+            // });
+        }
+    });
+}
     
 module.exports = function(app) {
     
@@ -77,56 +204,79 @@ module.exports = function(app) {
     // 分页
     getListPost(pageIndex, 10, function(err, docs, total){
         res.render('index', { 
-        title:   'Express for szy',
-        user:    req.session.user,
-        success: req.flash('success').toString(),
-        error:   req.flash('error').toString(),
-        posts:   docs,
-        page:    parseInt(pageIndex),
-        isFirstPage: parseInt(pageIndex) - 1 === 0,
-        isLastPage:  parseInt(total/10) + 1 <= pageIndex
+            title:   'Express for szy',
+            user:    req.session.user,
+            success: req.flash('success').toString(),
+            error:   req.flash('error').toString(),
+            posts:   docs,
+            page:    parseInt(pageIndex),
+            isFirstPage: parseInt(pageIndex) - 1 === 0,
+            isLastPage:  parseInt(total/10) + 1 <= pageIndex
         });            
     });
   });
   
-  //使用_id查询文章
-  app.get('/p/:_id', function(req, res){
-      Post.findById(req.params._id, function(err, doc){
-         if(err) console.log(err);
-         else{
-             if(!doc) {
-                 req.flash('error',"文章不存在!");
-                 res.redirect('/');
-             } else {
-                  //doc.update({$inc: {pv:1}}, { w: 1 }); //update方法属于model，在document上肯定是无效的！！！
-                  doc.pv += 1; // 阅读数+1
-                  doc.save(function(err, raw){
-                      if(err) console.log(err);
-                      //console.log(raw);
-                  });
-                //  这种方法可以用，但复杂了点。
-                //   Post.update({_id: doc._id}, {$inc: {pv:1}}, function(err, raw){
-                //       if(err) console.log(err);
-                //       console.log(raw); //{ ok: 1, nModified: 1, n: 1 } 
-                //   });
-                  console.log(doc.pv);
-                  Comment.find({postId:doc._id},function(err,coms){
-                  if(err) console.log(err);
-                  else {
-                    res.render('article', { 
-                    title:   doc.postName + "'s article: " + doc.postTitle,
-                    user:    req.session.user,
-                    success: req.flash('success').toString(),
-                    error:   req.flash('error').toString(),
-                    post:    doc,
-                    comments: coms
-                    });
-                  }
-              });
+    // 使用_id查询文章
+    // 已重构的代码，好高端啊！
+    app.get('/p/:_id', function(req, res){
+        getPostById(req.params._id,function(err, doc){
+            if(err) {
+                req.flash('error',err);
+                res.redirect('/');
             }
-         }
-      });
-  })
+            else {
+                res.render('article', { 
+                title:   doc.postName + "'s article: " + doc.postTitle,
+                user:    req.session.user,
+                success: req.flash('success').toString(),
+                error:   req.flash('error').toString(),
+                model:    doc // 统一往前端传model
+            });
+            }
+            
+        });
+    });
+    
+    //   以下代码是未重构前的代码，好low啊~~~
+    //   Post.findById(req.params._id, function(err, doc){
+    //      if(err) console.log(err);
+    //      else{
+    //          if(!doc) {
+    //              req.flash('error',"文章不存在!");
+    //              res.redirect('/');
+    //          } else {
+    //               //doc.update({$inc: {pv:1}}, { w: 1 }); //update方法属于model，在document上肯定是无效的！！！
+    //               doc.pv += 1; // 阅读数+1
+    //               doc.save(function(err, raw){
+    //                   if(err) console.log(err);
+    //                   //console.log(raw);
+    //               });
+    //             //  这种方法可以用，但复杂了点。
+    //             //   Post.update({_id: doc._id}, {$inc: {pv:1}}, function(err, raw){
+    //             //       if(err) console.log(err);
+    //             //       console.log(raw); //{ ok: 1, nModified: 1, n: 1 } 
+    //             //   });
+    //             //
+    //             getPostById(req.params._id,function(err, doc){
+    //                 console.log(doc.comments);
+    //             })
+    //               Comment.find({postId:doc._id},function(err,coms){
+    //               if(err) console.log(err);
+    //               else {
+    //                 res.render('article', { 
+    //                 title:   doc.postName + "'s article: " + doc.postTitle,
+    //                 user:    req.session.user,
+    //                 success: req.flash('success').toString(),
+    //                 error:   req.flash('error').toString(),
+    //                 post:    doc,
+    //                 comments: coms
+    //                 });
+    //               }
+    //           });
+    //         }
+    //      }
+    //   });
+
 
   app.get('/u',function(req, res){
       var userName = req.query.userName;
@@ -176,7 +326,6 @@ module.exports = function(app) {
   });
 
   app.get('/u/:postName/:postTitle',function(req, res){
-      
     //   方法一 too conplex!  
     //   var query = Post.find({});
     //   query.where('postName',req.params.postName);
@@ -196,11 +345,6 @@ module.exports = function(app) {
     //             });
     //         }
     //   });
-      req.setEncoding('utf8');
-      console.log(req.params);
-      console.log(req.params.postTitle);//decodeURI
-      console.log(decodeURI(req.params.postTitle));
-      console.log(decodeURIComponent(req.params.postTitle));//decodeURIComponent()
       Post.findOne({ postName: req.params.postName, postTitle: req.params.postTitle}, function(err,doc){
          if(!doc) {
               req.flash('error',"文章不存在!");
@@ -333,21 +477,41 @@ module.exports = function(app) {
   // check login ?
   app.get('/post', checkLogin);
   app.get('/post', function (req, res) {
+      Tags.find({}, function(err, docs){
         res.render('post', { 
         title:   'Post',
         user:    req.session.user,
+        tags:    docs,
         success: req.flash('success').toString(),
         error:   req.flash('error').toString()
         });
+      })
   });
   
   app.post('/post', checkLogin);
   app.post('/post', function (req, res) {
       var currentUser = req.session.user;
+      // 这里首先将tags分割用逗号，然后插入tags的collections里
+      // 然后再讲_id 和 tagName 返回存post.tags里
+      var tagsIdRaw = req.body.tagIdList;
+      //tagsArray = tagsRaw.split(',');
+      var tags = tagsIdRaw.toString().split(',');
+      // Book.insertMany(rawDocuments, function (err, mongooseDocuments { /* ... */ });
+    //   var rawDocs = [];
+    //   tagsArray.forEach(function(tag, index){
+    //     var newTags = {tagName:tag}; //and more...
+    //     rawDocs.push(newTags);
+    //   });
+    //   Tags.insertMany(rawDocs, function(err, docs){
+    //       if(err) console.log(err);
+    //       console.log(docs);
+    //   })
+      //待处理
       var newPost = new Post({
           postName:  currentUser.userName,
           postTitle: req.body.postTitle,
-          postBody:  req.body.postBody // don't use markdown
+          postBody:  req.body.postBody, // don't use markdown
+          postTags:  tags
           //postBody:  markdown.toHTML(req.body.postBody),
       });
       newPost.save(function(err){
@@ -489,8 +653,35 @@ module.exports = function(app) {
                 }); 
           }
       });
-
   });  
+  
+  app.get('/tags',function(req, res){
+      var query = Tags.find({});
+      query.sort({createDate:-1});
+      query.exec(function(err, docs){
+         if(err) console.log(err);
+         console.log(docs);
+         res.render('tags',{
+            title: " 标签",
+            user:    req.session.user,
+            tags:    docs,
+            success: req.flash('success').toString(),
+            error:   req.flash('error').toString()
+            });
+      });
+      
+       
+  });
+  
+  app.get('/tags/:_id',function(req, res){
+      var tagId = req.query._id;
+      res.render('links',{
+        title: " 友情链接",
+        user:    req.session.user,
+        success: req.flash('success').toString(),
+        error:   req.flash('error').toString()
+        }); 
+  });
   
   function checkLogin(req, res, next){
     if (!req.session.user) {

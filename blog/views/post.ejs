@@ -1,13 +1,4 @@
 <%- include header %>
-<form method="post">
-  标题：<br />
-  <input type="text" name="postTitle" /><br />
-  正文：<br />
-  <textarea id="editor_id" name="postBody" rows="20" cols="100"></textarea><br />
-  <input type="submit" value="发表" />
-</form>
-<script charset="utf-8" src="/kindeditor/kindeditor.js"></script>
-<script charset="utf-8" src="/kindeditor/lang/zh-CN.js"></script>
 <script>
         var options = {
             allowImageUpload: false,
@@ -18,5 +9,36 @@
         KindEditor.ready(function(K) {
             window.editor = K.create('#editor_id', options);
         });
+        
+        function addTag(){
+            var tagObj = document.getElementById("tagList");
+            var tagValue = tagObj.value;
+            var tagText = tagObj.options[tagObj.selectedIndex].text;
+            if(document.getElementById("tagBody").value) {
+                document.getElementById("tagBody").value += ',' + tagText;
+                document.getElementById("tagIdList").value += ',' + tagValue;
+            }
+            else {
+                document.getElementById("tagBody").value += tagText;
+                document.getElementById("tagIdList").value += tagValue;
+            }
+        }
 </script>
+<form method="post">
+  标题：<input type="text" name="postTitle" /><br />
+  <input type="hidden" id="tagIdList" name="tagIdList" />
+  标签：<input type="text" id="tagBody" readonly="readonly" />    
+  <select id="tagList" >
+  <% tags.forEach(function (tag, index) { %>
+  <option class="tag" value="<%= tag._id %>"><%= tag.tagName %></a>
+  <% }) %>
+  </select>    
+  <input type="button" value="添加标签" onclick="javascript:addTag()" />
+  <br />
+  正文：<br />
+  <textarea id="editor_id" name="postBody" rows="20" cols="100"></textarea><br />
+  <input type="submit" value="发表" />
+</form>
+<script charset="utf-8" src="/kindeditor/kindeditor.js"></script>
+<script charset="utf-8" src="/kindeditor/lang/zh-CN.js"></script>
 <%- include footer %>
