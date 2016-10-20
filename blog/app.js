@@ -12,6 +12,7 @@ var MongoStore = require('connect-mongo')(session);
 
 //  db settings
 var mongoose = require('mongoose');
+mongoose.Promise = require('bluebird');
 var settings = require('./settings');
 
 // NaN

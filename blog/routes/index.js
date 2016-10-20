@@ -143,7 +143,6 @@ var getListPostBytagId = function(pageNumber, pageSize, tagId, callback) {
     query.exec().then(function(postList){
         console.log(postList);
         Post.countAsync().then(function(count){
-            //console.log("count: " + count); //OK
             var postViewModels = [];
             Promise.map(postList, function(doc){
                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
@@ -160,10 +159,34 @@ var getListPostBytagId = function(pageNumber, pageSize, tagId, callback) {
             }).error(function(e){
                 callback(e,[],-1);
             });
-            //console.log("count: " + postViewModels); //xx
         });
     });
-    
+}
+
+var getListPostByPostTitle = function(pageNumber, pageSize, val, callback) {
+    //var query = Post.find({postName: {$regex: val}});
+    var query = Post.find({postTitle: {$regex: val}});
+    query.sort({createDate:-1}).skip((pageNumber-1)*pageSize).limit(pageSize);
+    query.exec().then(function(postList){
+        Post.countAsync().then(function(count){
+            var postViewModels = [];
+            Promise.map(postList, function(doc){
+                var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
+                var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
+                return Join(tagQuery, commentQuery, function(tags, comments){ //如果在循环里还有查询，只能用join连接起来！
+                    var model = {};
+                    model            = doc;   //这里不应该偷懒，应该改一哈！
+                    model.tags       = tags;  //衍生属性，怎么打印不出来啊！
+                    model.commentQty = comments.length;
+                    return model;
+                })
+            }).then(function(docList){
+                callback(null,docList,count);
+            }).error(function(e){
+                callback(e,[],-1);
+            });
+        });
+    });
 }
 
 var getListPostByUserName =  function (pageNumber, pageSize, userName, callback){
@@ -716,6 +739,29 @@ module.exports = function(app) {
             });
         });
 
+  });
+  
+    app.get('/search',function(req, res){
+        var pageIndex = req.query.p ? parseInt(req.query.p) : 1;
+        var keyword = req.query.keyword;
+        var pattern = new RegExp(keyword, "i");
+        getListPostByPostTitle(pageIndex, 10, pattern, function(err, docs, total){
+            res.render('listPage', { 
+                title:   'search',
+                user:    req.session.user,
+                success: req.flash('success').toString(),
+                error:   req.flash('error').toString(),
+                models:   docs,
+                page:    parseInt(pageIndex),
+                isFirstPage: parseInt(pageIndex) - 1 === 0,
+                isLastPage:  parseInt(total/10) + 1 <= pageIndex
+            });
+        });
+  });
+  
+  //404页面
+  app.use(function (req, res) {
+    res.render("404");
   });
   
   function checkLogin(req, res, next){
