@@ -46,14 +46,11 @@ var getListPost =  function (pageNumber, pageSize, callback){
     query.sort({createDate:-1}).skip((pageNumber-1)*pageSize).limit(pageSize);
     //好激动，哥的异步力量要觉醒了~~~
     query.exec().then(function(postList){
-        //console.log(postList); //OK
-        //callback(null,[],-1);
-        Post.countAsync().then(function(count){
-            //console.log("count: " + count); //OK
-            var postViewModels = [];
+        var postViewModels = [];
             Promise.map(postList, function(doc){
                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
                 var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
+                var userQuery = User.findById()
                 return Join(tagQuery, commentQuery, function(tags, comments){ //如果在循环里还有查询，只能用join连接起来！
                     var model = {};
                     model            = doc;   //这里不应该偷懒，应该改一哈！
@@ -62,11 +59,9 @@ var getListPost =  function (pageNumber, pageSize, callback){
                     return model;
                 })
             }).then(function(docList){
-                callback(null,docList,count);
+                callback(null,docList,postList.length);
             }).error(function(e){
                 callback(e,[],-1);
-            });
-            //console.log("count: " + postViewModels); //xx
         });
     });
     
@@ -141,9 +136,7 @@ var getListPostBytagId = function(pageNumber, pageSize, tagId, callback) {
     var query = Post.find({postTags: tagId});
     query.sort({createDate:-1}).skip((pageNumber-1)*pageSize).limit(pageSize);
     query.exec().then(function(postList){
-        console.log(postList);
-        Post.countAsync().then(function(count){
-            var postViewModels = [];
+        var postViewModels = [];
             Promise.map(postList, function(doc){
                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
                 var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
@@ -155,10 +148,9 @@ var getListPostBytagId = function(pageNumber, pageSize, tagId, callback) {
                     return model;
                 })
             }).then(function(docList){
-                callback(null,docList,count);
+                callback(null,docList,postList.length);
             }).error(function(e){
                 callback(e,[],-1);
-            });
         });
     });
 }
@@ -168,8 +160,7 @@ var getListPostByPostTitle = function(pageNumber, pageSize, val, callback) {
     var query = Post.find({postTitle: {$regex: val}});
     query.sort({createDate:-1}).skip((pageNumber-1)*pageSize).limit(pageSize);
     query.exec().then(function(postList){
-        Post.countAsync().then(function(count){
-            var postViewModels = [];
+        var postViewModels = [];
             Promise.map(postList, function(doc){
                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
                 var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
@@ -181,11 +172,10 @@ var getListPostByPostTitle = function(pageNumber, pageSize, val, callback) {
                     return model;
                 })
             }).then(function(docList){
-                callback(null,docList,count);
+                callback(null,docList,postList.length);
             }).error(function(e){
                 callback(e,[],-1);
-            });
-        });
+        });    
     });
 }
 

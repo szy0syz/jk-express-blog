@@ -3,7 +3,8 @@ var Schema = mongoose.Schema;
 var format = require('date-format');
 
 var postSchema = new Schema({
-    postName: String,
+    postAuthorId: String,
+    postName: Schema.Types.ObjectId, //User表的_id
     postTitle: String,
     postBody: String,
     createDate: {
