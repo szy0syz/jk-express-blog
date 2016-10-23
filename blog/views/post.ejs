@@ -1,15 +1,5 @@
 <%- include header %>
 <script>
-        var options = {
-            allowImageUpload: false,
-            allowFlashUpload: false,
-            allowMediaUpload: false,
-            allowFileUpload:  false
-        };
-        KindEditor.ready(function(K) {
-            window.editor = K.create('#editor_id', options);
-        });
-        
         function addTag(){
             var tagObj = document.getElementById("tagList");
             var tagValue = tagObj.value;
@@ -41,4 +31,15 @@
 </form>
 <script charset="utf-8" src="/kindeditor/kindeditor.js"></script>
 <script charset="utf-8" src="/kindeditor/lang/zh-CN.js"></script>
+<script>
+        var options = {
+            allowImageUpload: false,
+            allowFlashUpload: false,
+            allowMediaUpload: false,
+            allowFileUpload:  false
+        };
+        KindEditor.ready(function(K) {
+            window.editor = K.create('#editor_id', options);
+        });
+</script>
 <%- include footer %>
