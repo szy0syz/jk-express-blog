@@ -2,7 +2,7 @@
 <% posts.forEach(function (model, index) { %>
   <p><h2><a href="/p/<%= model._id %>"><%= model.postTitle %></a></h2></p>
   <p class="info">
-    作者：<a href="/u/<%= model.postName %>"><img src="<%= model.head %>" class="r_head" /></a> <a href="/u/<%= model.postName %>"><%= model.postName %></a> | 
+    <img src="<%= model.user.userHead %>" /> 作者：<a href="/u/<%= model.postName %>"></a> <a href="/u/<%= model.postName %>"><%= model.postName %></a> | 
     日期：<%= model.createDate.std %>
   </p>
   <p><%- model.postBody %></p>

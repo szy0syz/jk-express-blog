@@ -4,7 +4,7 @@
   <span><a class="edit" href="/remove/<%= model._id %>">删除</a></span>
 </p>
 <p class="info">
-  作者：<a href="/u/<%= model.postName %>"><%= model.postName %></a> | 
+  <img src="<%= model.user.userHead %>" /> 作者：<a href="/u/<%= model.postName %>"></a> <a href="/u/<%= model.postName %>"><%= model.postName %></a> | 
   日期：<%= model.createDate.std %>
 </p>
 <p><%- model.postBody %></p>

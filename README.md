@@ -47,21 +47,16 @@
 - [x] ~~增加友情链接~~
 - [x] ~~增加404页面~~
 - [ ] 增加头像
-- [ ] 增加转载功能和转载统计
 - [x] ~~增加日志功能~~
 - [x] ~~使用MongoDB _id 查询~~
 - [x] ~~使用bluebird~~
-- [ ] 使用Disqus
-- [ ] 使用generic pool
 - [ ] 使用Handlebars
 - [x] ~~使用KindEditor~~
 - [x] ~~修复首页user超链接~~
 - [ ] 使用Passport
 
-
 ----
-
-### TODO
+### Question
 * for循环的作用域外定义的变量在其内错乱问题怎么破？？？
 * 在主页显示时评论数量时，考虑级联查询或者将comments放到posts的collection里，看看哪种更合理吧
 * 以后考虑使用mvc，单独提出ViewModel来处理
@@ -78,7 +73,8 @@
 *             在用bluebird时，嵌套异步是，先mongoose定义哈查询+exce()，然后再用promise.join连起来后两个return 
 *             基本搞定标签系统，剩下的很好搞了。
 * 10.20-22:53 文字标题检索功能完成
-
+* 10.23-11:48 generic pool功能不用管了，mongoose已经配置。Disqus也不想用了，自己的评论系统也OK了。转载功能和转载统计也不想用了，意思不大。头像功能还是要整一下。
+* 10.23:13:02 model的save方法只能具体在实例上使用，不能在集合docs上使用save方法！
 ----
 ### Summary
 * <font color="#FF0000">千万别用mongodb原生Node客服端，天大的坑！</font>

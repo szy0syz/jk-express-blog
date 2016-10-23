@@ -4,7 +4,8 @@ var crypto = require('crypto'),
     Post   = require('../models/post.js').Post,
     Comment= require('../models/comment.js').Comment,
     Tags   = require('../models/tags.js').Tags,
-    markdown = require('markdown').markdown;
+    markdown = require('markdown').markdown,
+    crypto = require('crypto');
 
 var settings = require('../settings');
 var mongoose = require('mongoose');
@@ -50,12 +51,13 @@ var getListPost =  function (pageNumber, pageSize, callback){
             Promise.map(postList, function(doc){
                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
                 var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
-                var userQuery = User.findById()
-                return Join(tagQuery, commentQuery, function(tags, comments){ //如果在循环里还有查询，只能用join连接起来！
+                var userQuery = User.findById(doc.postAuthorId).exec();
+                return Join(tagQuery, commentQuery, userQuery, function(tags, comments, user){ //如果在循环里还有查询，只能用join连接起来！
                     var model = {};
                     model            = doc;   //这里不应该偷懒，应该改一哈！
                     model.tags       = tags;  //衍生属性，怎么打印不出来啊！
                     model.commentQty = comments.length;
+                    model.user       = user;
                     return model;
                 })
             }).then(function(docList){
@@ -140,11 +142,13 @@ var getListPostBytagId = function(pageNumber, pageSize, tagId, callback) {
             Promise.map(postList, function(doc){
                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
                 var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
-                return Join(tagQuery, commentQuery, function(tags, comments){ //如果在循环里还有查询，只能用join连接起来！
+                var userQuery = User.findById(doc.postAuthorId).exec();
+                return Join(tagQuery, commentQuery, userQuery, function(tags, comments, user){ //如果在循环里还有查询，只能用join连接起来！
                     var model = {};
                     model            = doc;   //这里不应该偷懒，应该改一哈！
                     model.tags       = tags;  //衍生属性，怎么打印不出来啊！
                     model.commentQty = comments.length;
+                    model.user       = user;
                     return model;
                 })
             }).then(function(docList){
@@ -164,11 +168,13 @@ var getListPostByPostTitle = function(pageNumber, pageSize, val, callback) {
             Promise.map(postList, function(doc){
                 var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
                 var commentQuery = Comment.find({postId:doc._id}).select("_id").exec();
-                return Join(tagQuery, commentQuery, function(tags, comments){ //如果在循环里还有查询，只能用join连接起来！
+                var userQuery = User.findById(doc.postAuthorId).exec();
+                return Join(tagQuery, commentQuery, userQuery, function(tags, comments, user){ //如果在循环里还有查询，只能用join连接起来！
                     var model = {};
                     model            = doc;   //这里不应该偷懒，应该改一哈！
                     model.tags       = tags;  //衍生属性，怎么打印不出来啊！
                     model.commentQty = comments.length;
+                    model.user       = user;
                     return model;
                 })
             }).then(function(docList){
@@ -206,16 +212,16 @@ var getPostById = function (id, callback) {
         else { //文章存在
             //标签
             var postViewModel = {};
-            var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName");
-            var commentQuery = Comment.find({postId:doc._id}).sort({createDate: 1});
-            tagQuery.exec(function(err, tagDocs){
-                commentQuery.exec(function(err, commentDocs){
-                    postViewModel = doc; //obj
-                    postViewModel.tags = tagDocs; // [{...}, {...}]
-                    postViewModel.comments = commentDocs; // [{...}, {...}]
-                    postViewModel.commentQty = commentDocs.length; // comment qty
-                    callback(null, postViewModel);
-                });
+            var tagQuery = Tags.find({_id: {$in:doc.postTags}}).select("_id tagName").exec();
+            var commentQuery = Comment.find({postId:doc._id}).sort({createDate: 1}).exec();
+            var userQuery = User.findById(doc.postAuthorId).exec();
+            Join(tagQuery, commentQuery, userQuery, function(tagDocs, commentDocs, userDoc){
+                postViewModel = doc; //obj
+                postViewModel.tags = tagDocs; // [{...}, {...}]
+                postViewModel.comments = commentDocs; // [{...}, {...}]
+                postViewModel.commentQty = commentDocs.length; // comment qty
+                postViewModel.user = userDoc;
+                callback(null, postViewModel);
             });
 
             // Tags.find({_id: {$in:doc.postTags}}, function(err, docs){
@@ -270,7 +276,7 @@ module.exports = function(app) {
                 user:    req.session.user,
                 success: req.flash('success').toString(),
                 error:   req.flash('error').toString(),
-                model:    doc // 统一往前端传model
+                model:   doc // 统一往前端传model
             });
             }
             
@@ -429,6 +435,19 @@ module.exports = function(app) {
   });  
   
   app.get('/szy', function (req, res) {
+      
+    // User.find(function(err, docs){
+    //     docs.forEach(function(doc, index){
+    //         doc.userHead = "http://www.gravatar.com/avatar/764499eb4e9bcf8341e2103adc6ff753?s=30";
+    //         doc.save(function(err){
+    //             if(err) console.log(err);
+    //             else{
+    //                 console.log("修改成功");
+    //             }
+    //         });
+    //     })
+    // })
+      
     res.send('my name is szy.');
   });
   
@@ -446,8 +465,10 @@ module.exports = function(app) {
     var name        = req.body.name,
         password    = req.body.password,
         password_re = req.body['password-repeat'],
-        eamil       = req.body.eamil;
-    
+        email       = req.body.email,
+        md5         = crypto.createHash('md5'),
+        email_MD5 = md5.update(email.toLowerCase()).digest('hex'),
+        head = "http://www.gravatar.com/avatar/" + email_MD5 + "?s=48";
     //检验用户两次输入的密码是否一致
     if (password_re != password) {
         req.flash('error', '两次输入的密码不一致!'); 
@@ -460,7 +481,8 @@ module.exports = function(app) {
     var newUser = new User({
         userName:   name,
         userPwd:    password, // md5 pwd
-        userEmail:  eamil
+        userEmail:  email,
+        userHead:   head   //用户头像图片地址
     });
     
     //检查用户名是否已经存在 
@@ -548,11 +570,11 @@ module.exports = function(app) {
     //   })
       //待处理
       var newPost = new Post({
+          postAuthorId: currentUser._id, //存储作者ID号
           postName:  currentUser.userName,
           postTitle: req.body.postTitle,
           postBody:  req.body.postBody, // don't use markdown
           postTags:  tags
-          //postBody:  markdown.toHTML(req.body.postBody),
       });
       newPost.save(function(err){
           if(err) {
